@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Mini Printer",
+    "ads": 18,
+    "days": 6,
+    "price": 25,
+    "cost": 7
+  },
+  {
+    "name": "Smart Water Bottle",
+    "ads": 14,
+    "days": 5,
+    "price": 35,
+    "cost": 11
+  },
+  {
+    "name": "Pet Hair Remover",
+    "ads": 22,
+    "days": 8,
+    "price": 19,
+    "cost": 4
+  }
+]
