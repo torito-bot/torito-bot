@@ -1,8 +1,8 @@
-from aiogram import Router
-from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery
 
 from app.database.db import log_event
+from app.keyboards.niche_menu import niche_menu
 from app.keyboards.product_actions import get_product_actions
 from app.services.niche_scanner_service import search_products_by_niche
 
@@ -13,47 +13,28 @@ router = Router()
 async def niche_help(message: Message):
     text = (
         "🔎 Пошук по ніші\n\n"
-        "Напиши команду так:\n"
-        "/pick pet products\n\n"
-        "Приклади:\n"
-        "/pick car accessories\n"
-        "/pick kitchen gadgets\n"
-        "/pick fitness\n"
-        "/pick home decor"
+        "Обери готову нішу нижче 👇"
     )
-    await message.answer(text)
+    await message.answer(text, reply_markup=niche_menu())
 
 
-@router.message(Command("pick"))
-async def pick_products(message: Message):
-    user_id = message.from_user.id if message.from_user else 0
+@router.callback_query(F.data.startswith("niche:"))
+async def pick_niche(callback: CallbackQuery):
+    user_id = callback.from_user.id if callback.from_user else 0
+    query = callback.data.split(":", 1)[1].strip()
 
-    full_text = (message.text or "").strip()
-    parts = full_text.split(maxsplit=1)
-
-    if len(parts) < 2:
-        await message.answer(
-            "Напиши запит так:\n"
-            "/pick pet products"
-        )
-        return
-
-    query = parts[1].strip()
     log_event(user_id, "open_section", f"niche_pick:{query}")
 
     products = search_products_by_niche(query)
 
     if not products:
-        await message.answer(
-            f"По ніші '{query}' поки нічого не знайдено.\n\n"
-            "Спробуй інший запит:\n"
-            "/pick car accessories\n"
-            "/pick kitchen gadgets\n"
-            "/pick fitness"
+        await callback.message.answer(
+            f"По ніші '{query}' поки нічого не знайдено."
         )
+        await callback.answer()
         return
 
-    await message.answer(f"🔎 Знайдено товари по ніші: {query}")
+    await callback.message.answer(f"🔎 Знайдено товари по ніші: {query}")
 
     for p in products:
         text = (
@@ -70,4 +51,6 @@ async def pick_products(message: Message):
             f"🎯 Torito Score: {p['score']}/100 {p['score_label']}\n"
         )
 
-        await message.answer(text, reply_markup=get_product_actions(p["name"]))
+        await callback.message.answer(text, reply_markup=get_product_actions(p["name"]))
+
+    await callback.answer()
