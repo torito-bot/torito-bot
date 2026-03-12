@@ -55,7 +55,4 @@ async def ads_scanner(message: Message):
             f"🎯 Torito Score: {p['score']}/100 {p['score_label']}"
         )
 
-        await message.answer(
-            text,
-            reply_markup=get_product_actions(p["name"])
-        )
+        await message.answer(text, reply_markup=get_product_actions(p["name"]))
