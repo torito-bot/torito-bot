@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from app.database.db import log_event
 from app.keyboards.niche_menu import niche_menu
 from app.keyboards.product_actions import get_product_actions
+from app.keyboards.limit_actions import invite_friend_button
 from app.services.niche_scanner_service import search_products_by_niche
 from app.services.limit_service import check_limit
 
@@ -30,8 +31,8 @@ async def pick_niche(callback: CallbackQuery):
         await callback.message.answer(
             f"⛔ Ліміт аналізів на сьогодні вичерпано\n\n"
             f"Використано: {used}/{limit}\n\n"
-            f"🎁 Запроси друзів, щоб збільшити ліміт\n"
-            f"/ref"
+            f"🎁 Запроси друзів, щоб збільшити ліміт",
+            reply_markup=invite_friend_button()
         )
         await callback.answer()
         return
