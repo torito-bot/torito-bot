@@ -8,11 +8,16 @@ from app.utils.product_score import (
 from app.utils.torito_score import calculate_torito_score, get_score_label
 
 
-def get_meta_ads_products():
+def get_meta_ads_products_by_geo(geo_code: str):
     source_products = load_meta_ads_mock()
     result = []
 
     for p in source_products:
+        product_geo = [g.lower() for g in p.get("geo", [])]
+
+        if geo_code.lower() not in product_geo:
+            continue
+
         margin = calculate_margin_percent(p["price"], p["cost"])
         score = calculate_torito_score(margin, p["ads"], p["days"])
 
@@ -23,6 +28,7 @@ def get_meta_ads_products():
             "price": p["price"],
             "cost": p["cost"],
             "source": p["source"],
+            "geo": geo_code.upper(),
             "margin": margin,
             "competition": get_competition_level(p["ads"]),
             "potential": get_potential_level(margin, p["ads"], p["days"]),
@@ -31,4 +37,5 @@ def get_meta_ads_products():
             "score_label": get_score_label(score),
         })
 
-    return result
+    result.sort(key=lambda item: (item["score"], item["days"], item["margin"]), reverse=True)
+    return result[:10]
