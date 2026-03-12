@@ -1,14 +1,18 @@
-import sqlite3
-from pathlib import Path
+import os
 import json
+from pathlib import Path
+import psycopg
 
-DB_PATH = Path("torito.db")
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    if DATABASE_URL:
+        return psycopg.connect(DATABASE_URL)
+    raise ValueError("DATABASE_URL not found")
 
 
 def load_json_file(filename: str):
@@ -23,8 +27,8 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE,
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT UNIQUE,
         username TEXT,
         full_name TEXT,
         first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -33,8 +37,8 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT,
         event TEXT,
         event_value TEXT,
         created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -43,7 +47,7 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         ads INTEGER NOT NULL,
         days INTEGER NOT NULL,
@@ -71,13 +75,13 @@ def seed_products():
         for p in top_products:
             cursor.execute("""
             INSERT INTO products (name, ads, days, price, cost, product_type)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """, (p["name"], p["ads"], p["days"], p["price"], p["cost"], "top"))
 
         for p in trending_products:
             cursor.execute("""
             INSERT INTO products (name, ads, days, price, cost, product_type)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """, (p["name"], p["ads"], p["days"], p["price"], p["cost"], "trending"))
 
     conn.commit()
@@ -91,7 +95,7 @@ def get_products_by_type(product_type):
     cursor.execute("""
     SELECT name, ads, days, price, cost
     FROM products
-    WHERE product_type = ?
+    WHERE product_type = %s
     ORDER BY ads DESC
     """, (product_type,))
 
@@ -115,8 +119,9 @@ def add_user(user_id, username=None, full_name=None):
     cursor = conn.cursor()
 
     cursor.execute("""
-    INSERT OR IGNORE INTO users (user_id, username, full_name)
-    VALUES (?, ?, ?)
+    INSERT INTO users (user_id, username, full_name)
+    VALUES (%s, %s, %s)
+    ON CONFLICT (user_id) DO NOTHING
     """, (user_id, username, full_name))
 
     conn.commit()
@@ -129,7 +134,7 @@ def log_event(user_id, event, event_value=None):
 
     cursor.execute("""
     INSERT INTO events (user_id, event, event_value)
-    VALUES (?, ?, ?)
+    VALUES (%s, %s, %s)
     """, (user_id, event, event_value))
 
     conn.commit()
@@ -153,12 +158,12 @@ def count_events(event, event_value=None):
 
     if event_value is None:
         cursor.execute(
-            "SELECT COUNT(*) FROM events WHERE event = ?",
+            "SELECT COUNT(*) FROM events WHERE event = %s",
             (event,)
         )
     else:
         cursor.execute(
-            "SELECT COUNT(*) FROM events WHERE event = ? AND event_value = ?",
+            "SELECT COUNT(*) FROM events WHERE event = %s AND event_value = %s",
             (event, event_value)
         )
 
@@ -177,7 +182,7 @@ def get_top_clicked_products(limit=5):
     WHERE event = 'click_action'
     GROUP BY event_value
     ORDER BY total DESC
-    LIMIT ?
+    LIMIT %s
     """, (limit,))
 
     rows = cursor.fetchall()
