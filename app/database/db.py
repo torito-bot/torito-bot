@@ -397,3 +397,62 @@ def get_usage_today(user_id):
     if row:
         return row[0]
     return 0
+
+
+from datetime import date
+
+def ensure_usage_table():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS usage_daily (
+        user_id BIGINT,
+        usage_date DATE,
+        count INTEGER DEFAULT 0,
+        PRIMARY KEY (user_id, usage_date)
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def track_usage(user_id):
+    ensure_usage_table()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    today = date.today()
+
+    cursor.execute("""
+    INSERT INTO usage_daily (user_id, usage_date, count)
+    VALUES (%s, %s, 1)
+    ON CONFLICT (user_id, usage_date)
+    DO UPDATE SET count = usage_daily.count + 1
+    """, (user_id, today))
+
+    conn.commit()
+    conn.close()
+
+
+def get_usage_today(user_id):
+    ensure_usage_table()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    today = date.today()
+
+    cursor.execute("""
+    SELECT count FROM usage_daily
+    WHERE user_id = %s AND usage_date = %s
+    """, (user_id, today))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return row[0]
+    return 0
