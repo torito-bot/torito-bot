@@ -6,6 +6,7 @@ def main_menu():
         [KeyboardButton(text="🔥 ТОП товарів")],
         [KeyboardButton(text="⚡ Трендові товари")],
         [KeyboardButton(text="📡 Ads сканер")],
+        [KeyboardButton(text="🔎 Пошук по ніші")],
         [KeyboardButton(text="📊 Категорії")],
         [KeyboardButton(text="🎓 Запуск товарного бізнесу")],
     ]
