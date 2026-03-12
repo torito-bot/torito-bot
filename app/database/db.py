@@ -205,7 +205,18 @@ def get_user_referral_info(user_id):
     """, (user_id,))
     row = cursor.fetchone()
 
-    referral_code = row[0] if row else make_referral_code(user_id)
+    if row and row[0]:
+        referral_code = row[0]
+    else:
+        referral_code = make_referral_code(user_id)
+
+        cursor.execute("""
+        UPDATE users
+        SET referral_code = %s
+        WHERE user_id = %s
+        """, (referral_code, user_id))
+
+        conn.commit()
 
     cursor.execute("""
     SELECT COUNT(*)
