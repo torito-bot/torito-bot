@@ -4,6 +4,7 @@ from aiogram.types import Message
 from app.database.db import log_event
 from app.keyboards.product_actions import get_product_actions
 from app.services.ads_7days_service import get_ads_7days_products
+from app.services.limit_service import check_limit
 
 router = Router()
 
@@ -11,6 +12,26 @@ router = Router()
 @router.message(lambda message: message.text == "🔥 Реклама 7+ днів")
 async def ads_7days(message: Message):
     user_id = message.from_user.id if message.from_user else 0
+
+    ok, used, limit = check_limit(user_id)
+
+    if not ok:
+        await message.answer(
+            f"⛔ Ліміт аналізів на сьогодні вичерпано\n\n"
+            f"Використано: {used}/{limit}\n\n"
+            f"🎁 Запроси друзів, щоб збільшити ліміт\n"
+            f"/ref"
+        )
+        return
+
+    remaining = limit - used
+
+    await message.answer(
+        f"🔥 Реклама 7+ днів\n\n"
+        f"Використано: {used}/{limit}\n"
+        f"Залишилось: {remaining}"
+    )
+
     log_event(user_id, "open_section", "ads_7days")
 
     products = get_ads_7days_products()
@@ -18,8 +39,6 @@ async def ads_7days(message: Message):
     if not products:
         await message.answer("Поки що немає товарів з рекламою 7+ днів.")
         return
-
-    await message.answer("🔥 Товари з рекламою 7+ днів")
 
     for p in products:
         text = (

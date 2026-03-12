@@ -5,6 +5,7 @@ from app.database.db import log_event
 from app.keyboards.niche_menu import niche_menu
 from app.keyboards.product_actions import get_product_actions
 from app.services.niche_scanner_service import search_products_by_niche
+from app.services.limit_service import check_limit
 
 router = Router()
 
@@ -22,6 +23,26 @@ async def niche_help(message: Message):
 async def pick_niche(callback: CallbackQuery):
     user_id = callback.from_user.id if callback.from_user else 0
     query = callback.data.split(":", 1)[1].strip()
+
+    ok, used, limit = check_limit(user_id)
+
+    if not ok:
+        await callback.message.answer(
+            f"⛔ Ліміт аналізів на сьогодні вичерпано\n\n"
+            f"Використано: {used}/{limit}\n\n"
+            f"🎁 Запроси друзів, щоб збільшити ліміт\n"
+            f"/ref"
+        )
+        await callback.answer()
+        return
+
+    remaining = limit - used
+
+    await callback.message.answer(
+        f"🔎 Пошук по ніші\n\n"
+        f"Використано: {used}/{limit}\n"
+        f"Залишилось: {remaining}"
+    )
 
     log_event(user_id, "open_section", f"niche_pick:{query}")
 

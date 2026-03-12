@@ -4,6 +4,7 @@ from aiogram.types import Message
 from app.database.db import log_event
 from app.keyboards.product_actions import get_product_actions
 from app.services.top_score_service import get_top_score_products
+from app.services.limit_service import check_limit
 
 router = Router()
 
@@ -11,6 +12,26 @@ router = Router()
 @router.message(lambda message: message.text == "🏆 Top Score")
 async def top_score(message: Message):
     user_id = message.from_user.id if message.from_user else 0
+
+    ok, used, limit = check_limit(user_id)
+
+    if not ok:
+        await message.answer(
+            f"⛔ Ліміт аналізів на сьогодні вичерпано\n\n"
+            f"Використано: {used}/{limit}\n\n"
+            f"🎁 Запроси друзів, щоб збільшити ліміт\n"
+            f"/ref"
+        )
+        return
+
+    remaining = limit - used
+
+    await message.answer(
+        f"🏆 Top Score\n\n"
+        f"Використано: {used}/{limit}\n"
+        f"Залишилось: {remaining}"
+    )
+
     log_event(user_id, "open_section", "top_score")
 
     products = get_top_score_products()
@@ -18,8 +39,6 @@ async def top_score(message: Message):
     if not products:
         await message.answer("Поки що немає товарів для Top Score.")
         return
-
-    await message.answer("🏆 Найкращі товари за Torito Score")
 
     for index, p in enumerate(products, start=1):
         text = (

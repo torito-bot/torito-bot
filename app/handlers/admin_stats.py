@@ -31,6 +31,7 @@ async def show_stats(message: Message):
     ads_7days_opens = count_events("open_section", "ads_7days")
     top_score_opens = count_events("open_section", "top_score")
     referral_opens = count_events("open_section", "referrals")
+    niche_opens = count_events("open_section")
     total_clicks = count_events("click_action")
 
     top_clicked = get_top_clicked_products()
@@ -60,6 +61,7 @@ async def show_stats(message: Message):
         f"📡 Відкриття Ads scanner: {ads_scanner_opens}\n"
         f"🔥 Відкриття 7+ днів: {ads_7days_opens}\n"
         f"🏆 Відкриття Top Score: {top_score_opens}\n"
+        f"🔎 Усього відкриттів пошуку по нішах: {niche_opens}\n"
         f"🎁 Відкриття рефералки: {referral_opens}\n"
         f"🖱 Усього кліків по кнопках: {total_clicks}\n\n"
         "🏆 Найпопулярніші кліки:\n"
