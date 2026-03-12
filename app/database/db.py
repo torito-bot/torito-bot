@@ -76,6 +76,53 @@ def init_db():
     """)
 
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_ads_raw (
+        id SERIAL PRIMARY KEY,
+        ad_id TEXT UNIQUE,
+        geo TEXT NOT NULL,
+        page_name TEXT,
+        ad_text TEXT,
+        landing_url TEXT,
+        snapshot_url TEXT,
+        start_date TIMESTAMP,
+        active_days INTEGER DEFAULT 0,
+        raw_payload JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_ads_products (
+        id SERIAL PRIMARY KEY,
+        product_key TEXT UNIQUE,
+        product_name TEXT NOT NULL,
+        geo TEXT NOT NULL,
+        source TEXT DEFAULT 'Meta Ads',
+        advertisers_count INTEGER DEFAULT 0,
+        ads_count INTEGER DEFAULT 0,
+        avg_days INTEGER DEFAULT 0,
+        avg_price REAL DEFAULT 0,
+        est_cost REAL DEFAULT 0,
+        margin_percent INTEGER DEFAULT 0,
+        competition TEXT,
+        potential TEXT,
+        recommendation TEXT,
+        torito_score INTEGER DEFAULT 0,
+        score_label TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_ads_cache_state (
+        geo TEXT PRIMARY KEY,
+        last_ingest_at TIMESTAMP,
+        status TEXT,
+        notes TEXT
+    )
+    """)
+
+    cursor.execute("""
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS referral_code TEXT
     """)
@@ -414,6 +461,53 @@ def ensure_usage_table():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_ads_raw (
+        id SERIAL PRIMARY KEY,
+        ad_id TEXT UNIQUE,
+        geo TEXT NOT NULL,
+        page_name TEXT,
+        ad_text TEXT,
+        landing_url TEXT,
+        snapshot_url TEXT,
+        start_date TIMESTAMP,
+        active_days INTEGER DEFAULT 0,
+        raw_payload JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_ads_products (
+        id SERIAL PRIMARY KEY,
+        product_key TEXT UNIQUE,
+        product_name TEXT NOT NULL,
+        geo TEXT NOT NULL,
+        source TEXT DEFAULT 'Meta Ads',
+        advertisers_count INTEGER DEFAULT 0,
+        ads_count INTEGER DEFAULT 0,
+        avg_days INTEGER DEFAULT 0,
+        avg_price REAL DEFAULT 0,
+        est_cost REAL DEFAULT 0,
+        margin_percent INTEGER DEFAULT 0,
+        competition TEXT,
+        potential TEXT,
+        recommendation TEXT,
+        torito_score INTEGER DEFAULT 0,
+        score_label TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_ads_cache_state (
+        geo TEXT PRIMARY KEY,
+        last_ingest_at TIMESTAMP,
+        status TEXT,
+        notes TEXT
+    )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -456,3 +550,194 @@ def get_usage_today(user_id):
     if row:
         return row[0]
     return 0
+
+
+def save_meta_ads_raw(records):
+    if not records:
+        return
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    for r in records:
+        cursor.execute("""
+        INSERT INTO meta_ads_raw (
+            ad_id, geo, page_name, ad_text, landing_url, snapshot_url,
+            start_date, active_days, raw_payload
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (ad_id) DO UPDATE SET
+            geo = EXCLUDED.geo,
+            page_name = EXCLUDED.page_name,
+            ad_text = EXCLUDED.ad_text,
+            landing_url = EXCLUDED.landing_url,
+            snapshot_url = EXCLUDED.snapshot_url,
+            start_date = EXCLUDED.start_date,
+            active_days = EXCLUDED.active_days,
+            raw_payload = EXCLUDED.raw_payload
+        """, (
+            r.get("ad_id"),
+            r.get("geo"),
+            r.get("page_name"),
+            r.get("ad_text"),
+            r.get("landing_url"),
+            r.get("snapshot_url"),
+            r.get("start_date"),
+            r.get("active_days", 0),
+            json.dumps(r)
+        ))
+
+    conn.commit()
+    conn.close()
+
+
+def save_meta_ads_products(records):
+    if not records:
+        return
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    for r in records:
+        cursor.execute("""
+        INSERT INTO meta_ads_products (
+            product_key, product_name, geo, source,
+            advertisers_count, ads_count, avg_days,
+            avg_price, est_cost, margin_percent,
+            competition, potential, recommendation,
+            torito_score, score_label, updated_at
+        )
+        VALUES (
+            %s, %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, CURRENT_TIMESTAMP
+        )
+        ON CONFLICT (product_key) DO UPDATE SET
+            product_name = EXCLUDED.product_name,
+            geo = EXCLUDED.geo,
+            source = EXCLUDED.source,
+            advertisers_count = EXCLUDED.advertisers_count,
+            ads_count = EXCLUDED.ads_count,
+            avg_days = EXCLUDED.avg_days,
+            avg_price = EXCLUDED.avg_price,
+            est_cost = EXCLUDED.est_cost,
+            margin_percent = EXCLUDED.margin_percent,
+            competition = EXCLUDED.competition,
+            potential = EXCLUDED.potential,
+            recommendation = EXCLUDED.recommendation,
+            torito_score = EXCLUDED.torito_score,
+            score_label = EXCLUDED.score_label,
+            updated_at = CURRENT_TIMESTAMP
+        """, (
+            r.get("product_key"),
+            r.get("product_name"),
+            r.get("geo"),
+            r.get("source", "Meta Ads"),
+            r.get("advertisers_count", 0),
+            r.get("ads_count", 0),
+            r.get("avg_days", 0),
+            r.get("avg_price", 0),
+            r.get("est_cost", 0),
+            r.get("margin_percent", 0),
+            r.get("competition"),
+            r.get("potential"),
+            r.get("recommendation"),
+            r.get("torito_score", 0),
+            r.get("score_label"),
+        ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_meta_ads_products_by_geo(geo, limit=10):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT
+        product_name,
+        geo,
+        source,
+        advertisers_count,
+        ads_count,
+        avg_days,
+        avg_price,
+        est_cost,
+        margin_percent,
+        competition,
+        potential,
+        recommendation,
+        torito_score,
+        score_label
+    FROM meta_ads_products
+    WHERE geo = %s
+    ORDER BY torito_score DESC, avg_days DESC, advertisers_count DESC
+    LIMIT %s
+    """, (geo.lower(), limit))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [
+        {
+            "name": row[0],
+            "geo": row[1],
+            "source": row[2],
+            "advertisers_count": row[3],
+            "ads_count": row[4],
+            "days": row[5],
+            "price": row[6],
+            "cost": row[7],
+            "margin": row[8],
+            "competition": row[9],
+            "potential": row[10],
+            "recommendation": row[11],
+            "score": row[12],
+            "score_label": row[13],
+        }
+        for row in rows
+    ]
+
+
+def update_meta_ads_cache_state(geo, status, notes=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO meta_ads_cache_state (geo, last_ingest_at, status, notes)
+    VALUES (%s, CURRENT_TIMESTAMP, %s, %s)
+    ON CONFLICT (geo) DO UPDATE SET
+        last_ingest_at = CURRENT_TIMESTAMP,
+        status = EXCLUDED.status,
+        notes = EXCLUDED.notes
+    """, (geo.lower(), status, notes))
+
+    conn.commit()
+    conn.close()
+
+
+def get_meta_ads_cache_state(geo):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT geo, last_ingest_at, status, notes
+    FROM meta_ads_cache_state
+    WHERE geo = %s
+    """, (geo.lower(),))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "geo": row[0],
+        "last_ingest_at": row[1],
+        "status": row[2],
+        "notes": row[3],
+    }
