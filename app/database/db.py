@@ -8,6 +8,9 @@ DATA_DIR = BASE_DIR / "data"
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+BASE_FREE_LIMIT = 5
+REFERRAL_BONUS_PER_FRIEND = 2
+
 
 def get_connection():
     if DATABASE_URL:
@@ -330,3 +333,16 @@ def get_top_referrers(limit=5):
     conn.close()
 
     return rows
+
+
+def get_user_limits(user_id):
+    info = get_user_referral_info(user_id)
+    referrals_count = info["referrals_count"]
+    total_limit = BASE_FREE_LIMIT + referrals_count * REFERRAL_BONUS_PER_FRIEND
+
+    return {
+        "base_limit": BASE_FREE_LIMIT,
+        "referrals_count": referrals_count,
+        "bonus_per_friend": REFERRAL_BONUS_PER_FRIEND,
+        "total_limit": total_limit
+    }

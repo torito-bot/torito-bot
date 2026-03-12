@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from app.database.db import get_user_referral_info, log_event
+from app.database.db import get_user_referral_info, get_user_limits, log_event
 
 router = Router()
 
@@ -12,6 +12,7 @@ async def send_referral_info(message: Message):
     user_id = user.id if user else 0
 
     info = get_user_referral_info(user_id)
+    limits = get_user_limits(user_id)
     log_event(user_id, "open_section", "referrals")
 
     me = await message.bot.get_me()
@@ -20,16 +21,19 @@ async def send_referral_info(message: Message):
 
     text = (
         "🎁 Реферальна програма Torito\n\n"
-        f"👥 Запрошено друзів: {info['referrals_count']}\n\n"
+        f"👥 Запрошено друзів: {info['referrals_count']}\n"
+        f"🆓 Базовий free-ліміт: {limits['base_limit']} аналізів\n"
+        f"➕ Бонус за 1 друга: +{limits['bonus_per_friend']} аналізи\n"
+        f"📈 Твій поточний ліміт: {limits['total_limit']} аналізів\n\n"
         "Твоє реферальне посилання:\n"
         f"{referral_link}\n\n"
         "Як це працює:\n"
         "• друг переходить за твоїм посиланням\n"
         "• бот фіксує запрошення\n"
-        "• далі на це підключимо бонуси Free / Pro\n\n"
-        "Пізніше сюди додамо:\n"
-        "• бонусні аналізи\n"
-        "• unlock premium функцій\n"
+        "• ти отримуєш бонус до free-ліміту\n\n"
+        "Далі підключимо:\n"
+        "• реальні денні ліміти\n"
+        "• Pro доступ\n"
         "• рейтинг топ реферерів"
     )
 
