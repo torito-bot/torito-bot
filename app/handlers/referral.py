@@ -52,3 +52,32 @@ async def referral_inline(callback: CallbackQuery):
     text = await build_referral_text(callback)
     await callback.message.answer(text)
     await callback.answer()
+
+
+@router.callback_query(F.data == "buy_pro")
+async def buy_pro(callback: CallbackQuery):
+    text = (
+        "💎 PRO доступ Torito
+
+"
+        "Що дає PRO:
+"
+        "• необмежений Ads Scanner
+"
+        "• повний доступ до аналітики
+"
+        "• ранні трендові товари
+"
+        "• пріоритетні оновлення
+
+"
+        "💰 Вартість: 9$ / місяць
+
+"
+        "Напиши адміну для підключення:
+"
+        "@your_username"
+    )
+
+    await callback.message.answer(text)
+    await callback.answer()

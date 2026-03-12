@@ -3,7 +3,7 @@ from aiogram.types import Message
 
 from app.database.db import log_event
 from app.keyboards.product_actions import get_product_actions
-from app.keyboards.limit_actions import invite_friend_inline
+from app.keyboards.limit_actions import limit_actions_keyboard
 from app.services.top_score_service import get_top_score_products
 from app.services.limit_service import check_limit
 
@@ -21,7 +21,7 @@ async def top_score(message: Message):
             f"⛔ Ліміт аналізів на сьогодні вичерпано\n\n"
             f"Використано: {used}/{limit}\n\n"
             f"🎁 Запроси друзів, щоб збільшити ліміт",
-            reply_markup=invite_friend_inline()
+            reply_markup=limit_actions_keyboard()
         )
         return
 
