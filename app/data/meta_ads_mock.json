@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Magnetic Phone Holder",
+    "ads": 27,
+    "days": 11,
+    "price": 24,
+    "cost": 6,
+    "source": "Meta Ads"
+  },
+  {
+    "name": "Portable Juice Blender",
+    "ads": 19,
+    "days": 8,
+    "price": 39,
+    "cost": 12,
+    "source": "Meta Ads"
+  },
+  {
+    "name": "Pet Fur Remover Roller",
+    "ads": 14,
+    "days": 13,
+    "price": 18,
+    "cost": 3,
+    "source": "Meta Ads"
+  }
+]
