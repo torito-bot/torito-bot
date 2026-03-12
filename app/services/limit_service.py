@@ -1,7 +1,11 @@
+from app.config import ADMIN_ID
 from app.database.db import get_usage_today, track_usage, get_user_limits
 
 
 def check_limit(user_id: int):
+    if ADMIN_ID and str(user_id) == str(ADMIN_ID):
+        return True, 0, 999999
+
     usage = get_usage_today(user_id)
     limits = get_user_limits(user_id)
     total_limit = limits["total_limit"]
