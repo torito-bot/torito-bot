@@ -12,6 +12,7 @@ from app.handlers.ads_scanner import router as ads_scanner_router
 from app.handlers.ads_7days import router as ads_7days_router
 from app.handlers.top_score import router as top_score_router
 from app.handlers.niche_scanner import router as niche_scanner_router
+from app.handlers.referral import router as referral_router
 from app.handlers.product_actions import router as product_actions_router
 from app.handlers.admin_stats import router as admin_stats_router
 from app.handlers.menu_restore import router as menu_restore_router
@@ -33,6 +34,7 @@ async def main():
     dp.include_router(ads_7days_router)
     dp.include_router(top_score_router)
     dp.include_router(niche_scanner_router)
+    dp.include_router(referral_router)
     dp.include_router(product_actions_router)
     dp.include_router(admin_stats_router)
     dp.include_router(menu_restore_router)
