@@ -5,6 +5,7 @@ from app.utils.product_score import (
     get_potential_level,
     get_recommendation,
 )
+from app.utils.torito_score import calculate_torito_score, get_score_label
 
 
 def get_meta_ads_products():
@@ -13,6 +14,7 @@ def get_meta_ads_products():
 
     for p in source_products:
         margin = calculate_margin_percent(p["price"], p["cost"])
+        score = calculate_torito_score(margin, p["ads"], p["days"])
 
         result.append({
             "name": p["name"],
@@ -25,6 +27,8 @@ def get_meta_ads_products():
             "competition": get_competition_level(p["ads"]),
             "potential": get_potential_level(margin, p["ads"], p["days"]),
             "recommendation": get_recommendation(margin, p["ads"], p["days"]),
+            "score": score,
+            "score_label": get_score_label(score),
         })
 
     return result
