@@ -5,7 +5,7 @@ from app.database.db import log_event
 from app.keyboards.geo_selector import ads_geo_selector
 from app.keyboards.product_actions import get_product_actions
 from app.keyboards.limit_actions import limit_actions_keyboard
-from app.services.ads_scanner_service import get_meta_ads_products_by_geo
+from app.services.meta_ads_result_service import get_meta_ads_top10
 from app.services.limit_service import check_limit
 
 router = Router()
@@ -53,15 +53,23 @@ async def ads_scanner_run(callback: CallbackQuery):
         f"Гео: {geo_name}\n"
         f"Використано: {used}/{limit}\n"
         f"Залишилось: {remaining}\n\n"
-        f"🔎 Формую TOP 10 товарів..."
+        f"🔎 Завантажую TOP 10 товарів..."
     )
 
     log_event(user_id, "open_section", f"ads_scanner:{geo_code}")
 
-    products = get_meta_ads_products_by_geo(geo_code)
+    result = get_meta_ads_top10(geo_code)
+    products = result["products"]
+    cache_state = result["cache_state"]
 
     if not products:
-        await callback.message.answer(f"Поки що немає даних для {geo_name}.")
+        note = ""
+        if cache_state and cache_state.get("status"):
+            note = f"\nСтатус кешу: {cache_state['status']}"
+        await callback.message.answer(
+            f"Поки що немає завантажених даних для {geo_name}.{note}\n\n"
+            f"Наступний крок — підключаємо live ingest."
+        )
         await callback.answer()
         return
 
@@ -70,12 +78,13 @@ async def ads_scanner_run(callback: CallbackQuery):
     for index, p in enumerate(products, start=1):
         text = (
             f"🏆 #{index} {p['name']}\n\n"
-            f"🌍 Гео: {p['geo']}\n"
+            f"🌍 Гео: {p['geo'].upper()}\n"
             f"📍 Джерело: {p['source']}\n"
-            f"📢 Рекламодавців: {p['ads']}\n"
-            f"📅 Активна реклама: {p['days']} днів\n"
+            f"🏢 Рекламодавців: {p['advertisers_count']}\n"
+            f"📢 Ads: {p['ads_count']}\n"
+            f"📅 Середня активність: {p['days']} днів\n"
             f"💰 Середня ціна: ${p['price']}\n"
-            f"📦 Закупка: ${p['cost']}\n"
+            f"📦 Орієнтовна закупка: ${p['cost']}\n"
             f"📈 Маржа: ~{p['margin']}%\n"
             f"⚔️ Конкуренція: {p['competition']}\n"
             f"🚀 Потенціал: {p['potential']}\n"
