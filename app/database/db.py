@@ -98,6 +98,11 @@ def init_db():
         product_name TEXT NOT NULL,
         geo TEXT NOT NULL,
         source TEXT DEFAULT 'Meta Ads',
+        page_name TEXT,
+        media_type TEXT,
+        ad_library_url TEXT,
+        ad_snapshot_url TEXT,
+        creative_preview_url TEXT,
         advertisers_count INTEGER DEFAULT 0,
         ads_count INTEGER DEFAULT 0,
         avg_days INTEGER DEFAULT 0,
@@ -112,6 +117,12 @@ def init_db():
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS page_name TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS media_type TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS ad_library_url TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS ad_snapshot_url TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS creative_preview_url TEXT")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS meta_ads_cache_state (
@@ -484,6 +495,11 @@ def ensure_usage_table():
         product_name TEXT NOT NULL,
         geo TEXT NOT NULL,
         source TEXT DEFAULT 'Meta Ads',
+        page_name TEXT,
+        media_type TEXT,
+        ad_library_url TEXT,
+        ad_snapshot_url TEXT,
+        creative_preview_url TEXT,
         advertisers_count INTEGER DEFAULT 0,
         ads_count INTEGER DEFAULT 0,
         avg_days INTEGER DEFAULT 0,
@@ -498,6 +514,12 @@ def ensure_usage_table():
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS page_name TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS media_type TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS ad_library_url TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS ad_snapshot_url TEXT")
+    cursor.execute("ALTER TABLE meta_ads_products ADD COLUMN IF NOT EXISTS creative_preview_url TEXT")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS meta_ads_cache_state (
@@ -602,6 +624,7 @@ def save_meta_ads_products(records):
         cursor.execute("""
         INSERT INTO meta_ads_products (
             product_key, product_name, geo, source,
+            page_name, media_type, ad_library_url, ad_snapshot_url, creative_preview_url,
             advertisers_count, ads_count, avg_days,
             avg_price, est_cost, margin_percent,
             competition, potential, recommendation,
@@ -609,6 +632,7 @@ def save_meta_ads_products(records):
         )
         VALUES (
             %s, %s, %s, %s,
+            %s, %s, %s, %s, %s,
             %s, %s, %s,
             %s, %s, %s,
             %s, %s, %s,
@@ -618,6 +642,11 @@ def save_meta_ads_products(records):
             product_name = EXCLUDED.product_name,
             geo = EXCLUDED.geo,
             source = EXCLUDED.source,
+            page_name = EXCLUDED.page_name,
+            media_type = EXCLUDED.media_type,
+            ad_library_url = EXCLUDED.ad_library_url,
+            ad_snapshot_url = EXCLUDED.ad_snapshot_url,
+            creative_preview_url = EXCLUDED.creative_preview_url,
             advertisers_count = EXCLUDED.advertisers_count,
             ads_count = EXCLUDED.ads_count,
             avg_days = EXCLUDED.avg_days,
@@ -635,6 +664,11 @@ def save_meta_ads_products(records):
             r.get("product_name"),
             r.get("geo"),
             r.get("source", "Meta Ads"),
+            r.get("page_name"),
+            r.get("media_type"),
+            r.get("ad_library_url"),
+            r.get("ad_snapshot_url"),
+            r.get("creative_preview_url"),
             r.get("advertisers_count", 0),
             r.get("ads_count", 0),
             r.get("avg_days", 0),
@@ -661,6 +695,11 @@ def get_meta_ads_products_by_geo(geo, limit=10):
         product_name,
         geo,
         source,
+        page_name,
+        media_type,
+        ad_library_url,
+        ad_snapshot_url,
+        creative_preview_url,
         advertisers_count,
         ads_count,
         avg_days,
@@ -686,17 +725,22 @@ def get_meta_ads_products_by_geo(geo, limit=10):
             "name": row[0],
             "geo": row[1],
             "source": row[2],
-            "advertisers_count": row[3],
-            "ads_count": row[4],
-            "days": row[5],
-            "price": row[6],
-            "cost": row[7],
-            "margin": row[8],
-            "competition": row[9],
-            "potential": row[10],
-            "recommendation": row[11],
-            "score": row[12],
-            "score_label": row[13],
+            "page_name": row[3],
+            "media_type": row[4],
+            "ad_library_url": row[5],
+            "ad_snapshot_url": row[6],
+            "creative_preview_url": row[7],
+            "advertisers_count": row[8],
+            "ads_count": row[9],
+            "days": row[10],
+            "price": row[11],
+            "cost": row[12],
+            "margin": row[13],
+            "competition": row[14],
+            "potential": row[15],
+            "recommendation": row[16],
+            "score": row[17],
+            "score_label": row[18],
         }
         for row in rows
     ]

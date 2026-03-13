@@ -5,6 +5,7 @@ from app.database.db import log_event
 from app.keyboards.geo_selector import ads_geo_selector
 from app.keyboards.product_actions import get_product_actions
 from app.keyboards.limit_actions import limit_actions_keyboard
+from app.keyboards.ad_links import ad_links_keyboard
 from app.services.meta_ads_result_service import get_meta_ads_top10
 from app.services.limit_service import check_limit
 
@@ -80,6 +81,8 @@ async def ads_scanner_run(callback: CallbackQuery):
             f"🏆 #{index} {p['name']}\n\n"
             f"🌍 Гео: {p['geo'].upper()}\n"
             f"📍 Джерело: {p['source']}\n"
+            f"🏢 Сторінка: {p.get('page_name') or '—'}\n"
+            f"🎬 Тип крео: {p.get('media_type') or '—'}\n"
             f"🏢 Рекламодавців: {p['advertisers_count']}\n"
             f"📢 Ads: {p['ads_count']}\n"
             f"📅 Середня активність: {p['days']} днів\n"
@@ -94,6 +97,15 @@ async def ads_scanner_run(callback: CallbackQuery):
 
         await callback.message.answer(
             text,
+            reply_markup=ad_links_keyboard(
+                ad_library_url=p.get("ad_library_url"),
+                creative_preview_url=p.get("creative_preview_url"),
+                ad_snapshot_url=p.get("ad_snapshot_url"),
+            )
+        )
+
+        await callback.message.answer(
+            "Дії по товару:",
             reply_markup=get_product_actions(p["name"])
         )
 
